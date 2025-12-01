@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List Monospace Animasi Optimal - Revisi Akhir</title>
+    
+    <style>
+        /* --- PENONAKTIFAN HIGHLIGHT DEFAULT BROWSER --- */
+        .tap-target {
+            -webkit-tap-highlight-color: transparent;
+            -ms-touch-action: manipulation;
+            touch-action: manipulation;
+        }
+
+        /* ----------------------------------------------------------------- */
+        /* --- ANIMASI FADE-IN/FADE-OUT BARU --- */
+        /* ----------------------------------------------------------------- */
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fade-out {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        /* --- BACKGROUND & PUSAT HALAMAN --- */
+        body {
+            /* Mencegah scrolling */
+            overflow: hidden; 
+            
+            /* Terapkan animasi fade-in saat halaman dimuat */
+            animation: fade-in 0.5s ease-out forwards;
+            
+            display: flex;
+            justify-content: center; 
+            /* REVISI 1: Kembalikan ke center agar list terpusat vertikal dan tidak terdorong naik */
+            align-items: center; 
+            min-height: 100vh;
+            margin: 0;
+            background-color: white; 
+            font-family: 'Courier New', Courier, monospace; 
+            padding-top: 150px; 
+            box-sizing: border-box; 
+            
+            /* Agar fade-out bisa bekerja sebelum pindah halaman */
+            position: relative;
+        }
+        
+        /* REVISI 2: CSS BARU untuk footer teks copyright */
+        .footer-fixed {
+            position: fixed;
+            bottom: 10px; /* Atur sedikit jarak dari bawah layar */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            text-align: center;
+            /* REVISI 3: Background Dihilangkan (dibuat transparan) */
+            background-color: transparent; 
+            
+            /* REVISI 4: Warna Teks Abu-abu */
+            color: #888; 
+            
+            font-size: 0.9em;
+            font-weight: bold;
+            z-index: 500; 
+            font-family: 'Courier New', Courier, monospace;
+            padding: 5px 0; /* Memberi sedikit ruang vertikal */
+        }
+
+        /* Kelas yang ditambahkan JS sebelum pindah halaman */
+        .fade-out-page {
+            animation: fade-out 0.5s ease-in forwards;
+            pointer-events: none; /* Nonaktifkan interaksi saat fading */
+        }
+
+        /* --- TOPBAR DYNAMIC ISLAND --- */
+        .dynamic-island-topbar {
+            position: fixed;
+            top: 25px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 85%; 
+            max-width: 600px; 
+            height: 80px; 
+            background-color: white;
+            border: 1px solid black; 
+            border-radius: 40px; 
+            display: flex;
+            /* REVISI CSS: flex-start agar logo dan teks berada di kiri, tombol back di kanan */
+            justify-content: space-between; 
+            align-items: center;
+            padding: 0 30px; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); 
+            z-index: 1000;
+        }
+
+        /* --- LOGO BITCOIN DI DALAM ISLAND --- */
+        .dynamic-island-topbar img {
+            width: 60px; 
+            height: 60px;
+            object-fit: cover;
+            border-radius: 30px; 
+            /* REVISI CSS: Tambahkan margin-right agar ada jarak ke teks AL.XBT */
+            margin-right: 15px;
+        }
+
+        /* --- BARU: Styling untuk teks AL.XBT di Topbar --- */
+        .topbar-text {
+            /* Gunakan flex: 1 agar teks ini mengambil sisa ruang di tengah topbar */
+            flex-grow: 1; 
+            text-align: left; /* Teks rata kiri */
+            font-size: 1.5em; 
+            font-weight: bold;
+            color: black; 
+            font-family: 'Courier New', Courier, monospace; 
+        }
+        
+        /* --- APLIKASI ANIMASI PADA ELEMEN INTERAKTIF (Optimasi Tap) --- */
+        .bitcoin-list li, 
+        .back-button, 
+        .dynamic-island-topbar img,
+        .list-icon,
+        .close-button,
+        .lets-go-button {
+            cursor: pointer; 
+            transition: transform 0.1s ease-out; 
+        }
+
+        /* Saat Elemen Ditekan */
+        .bitcoin-list li:active, 
+        .back-button:active, 
+        .dynamic-island-topbar img:active,
+        .list-icon:active,
+        .close-button:active, .lets-go-button:active {
+            transform: scale(0.95);
+        }
+
+        /* Container utama yang memuat daftar list */
+        .list-container {
+            width: 100%;
+            max-width: 650px; 
+            padding: 0 20px;
+        }
+
+        /* Styling untuk daftar list (ul) */
+        .bitcoin-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            /* REVISI 5: Hapus padding-bottom karena footer tidak lagi menutupi */
+            padding-bottom: 0; 
+        }
+
+        /* --- STYLING LIST ITEM (LI) --- */
+        .bitcoin-list li {
+            width: 70%; 
+            margin: 0 auto 20px auto; 
+            min-height: 70px; 
+            background-color: white;
+            color: #333;
+            border: 1px solid black;
+            border-radius: 30px; 
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; 
+            padding: 0 20px; 
+            font-size: 1.3em; 
+            font-weight: bold;
+            transition: transform 0.1s ease-out, background-color 0.2s; 
+            box-sizing: border-box; 
+            font-family: 'Courier New', Courier, monospace; 
+            position: relative; 
+            padding-right: 70px; 
+        }
+        
+        .bitcoin-list li span {
+            position: absolute; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            margin: 0; 
+            width: fit-content; 
+            z-index: 2; 
+        }
+
+        .bitcoin-list li:hover {
+            background-color: #e9e9e9;
+        }
+
+        /* Styling untuk gambar di dalam list item */
+        .list-icon {
+            width: 40px; 
+            height: 40px;
+            object-fit: cover;
+            border-radius: 50%; 
+            margin-right: 20px; 
+            z-index: 3; 
+        }
+
+        /* --- TOMBOL BACK DI DALAM ISLAND --- */
+        .back-button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 45px; 
+            height: 45px;
+            background-color: #f0f0f0; 
+            border: 1px solid black; 
+            border-radius: 25px; 
+            text-decoration: none;
+            color: #333;
+            font-size: 1.2em; 
+            font-weight: bold;
+        }
+
+        .back-button:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* ----------------------------------------------------------------- */
+        /* --- CSS INDIKATOR AKTIF (!) PERMANEN (Dibuat agar bisa diklik) --- */
+        /* ----------------------------------------------------------------- */
+        @keyframes slide-in-indicator {
+            0% { opacity: 0; transform: translateY(-50%) translateX(-30px); }
+            100% { opacity: 1; transform: translateY(-50%) translateX(0); }
+        }
+
+        .bitcoin-list li::after {
+            content: ' ! ';
+            position: absolute;
+            right: -45px; 
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 30px; 
+            height: 30px;
+            background-color: #ffdab9; 
+            border: 1px solid black; 
+            border-radius: 50%;
+            font-size: 1.2em; 
+            font-weight: bold;
+            color: black;
+            opacity: 0; 
+            transition: opacity 0.3s; 
+            cursor: default; /* Default kursor agar tidak tumpang tindih */
+        }
+        
+        /* Tambahkan kursor pointer saat indicator siap diklik */
+        .bitcoin-list li.clicked::after {
+            animation: slide-in-indicator 0.5s ease-out forwards; 
+            opacity: 1; 
+            cursor: pointer; /* Indikator siap diklik */
+        }
+        
+        .bitcoin-list li:not(.clicked)::after {
+            opacity: 0; 
+            pointer-events: none; 
+        }
+
+        /* ----------------------------------------------------------------- */
+        /* --- MODAL BOX STYLING --- */
+        /* ----------------------------------------------------------------- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); 
+            display: flex;
+            flex-direction: column; /* Mengatur modal dan tombol di luar secara vertikal */
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            visibility: hidden; 
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s;
+        }
+
+        .modal-content {
+            background-color: white;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 15px; 
+            border: 1px solid black;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transform: scale(0.9); 
+            transition: transform 0.3s ease-in-out;
+            margin-bottom: 20px; /* Jarak antara modal dan tombol lets go */
+        }
+
+        .modal-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid black; 
+        }
+
+        .traffic-lights {
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid black;
+            box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .dot.red { background-color: #ff605c; }
+        .dot.yellow { background-color: #ffbd44; } 
+        .dot.green { background-color: #00ca4e; }
+
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .close-button:hover {
+            color: red;
+        }
+
+        .modal-body {
+            padding: 30px 20px;
+            text-align: center;
+            /* Memperbesar teks di tengah modal */
+            font-size: 1.5em; 
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* ----------------------------------------------------------------- */
+        /* --- TOMBOL LETS GO BARU (Di luar modal content) --- */
+        /* ----------------------------------------------------------------- */
+        .lets-go-button {
+            padding: 10px 20px;
+            background-color: white; /* Putih Polos */
+            color: black;
+            border: 1px solid black; /* Tetap beri border agar terlihat */
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); 
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .lets-go-button:hover {
+            background-color: #f0f0f0;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div class="dynamic-island-topbar tap-target">
+        <img src="pp.jpg" alt="Logo Bitcoin" class="bitcoin-logo tap-target">
+        
+        <div class="topbar-text">AL.XBT</div> 
+        
+        <a href="home.html" class="back-button tap-target"> > </a>
+    </div>
+
+    <div class="list-container">
+        <ul class="bitcoin-list" id="bitcoinList">
+            <li class="tap-target" data-page="Bitcoin">
+                <img src="bitcoin.jpg" alt="Bitcoin Icon" class="list-icon tap-target">
+                <span>Bitcoin</span>
+            </li>
+            <li class="tap-target" data-page="Wallet">
+                <img src="wallet.jpg" alt="Wallet Icon" class="list-icon tap-target">
+                <span>Wallet</span>
+            </li>
+            <li class="tap-target" data-page="Nodes">
+                <img src="nodes.jpg" alt="Nodes Icon" class="list-icon tap-target">
+                <span>Nodes</span>
+            </li>
+            <li class="tap-target" data-page-id="Mining" class="tap-target" data-page="Mining">
+                <img src="mining.jpg" alt="Mining Icon" class="list-icon tap-target">
+                <span>Mining</span>
+            </li>
+            <li class="tap-target" data-page="Blockchain">
+                <img src="blockchain.jpg" alt="Blockchain Icon" class="list-icon tap-target">
+                <span>Blockchain</span>
+            </li>
+            <li class="tap-target" data-page="Cryptography">
+                <img src="cryptography.jpg" alt="Cryptography Icon" class="list-icon tap-target">
+                <span>Cryptography</span>
+            </li>
+        </ul>
+    </div>
+
+    <div id="actionModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="traffic-lights">
+                    <div class="dot red"></div>
+                    <div class="dot yellow"></div>
+                    <div class="dot green"></div>
+                </div>
+                <button class="close-button" id="closeModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                Go to page <span id="pageName" style="color: #D2691E;">...</span>
+            </div>
+        </div>
+        <button class="lets-go-button tap-target" id="letsGoBtn">LET'S GO</button>
+    </div>
+    
+    <div class="footer-fixed">
+        @prentice_al
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const body = document.body; // Ambil elemen body
+            const listItems = document.querySelectorAll('.bitcoin-list li');
+            const modal = document.getElementById('actionModal');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const letsGoBtn = document.getElementById('letsGoBtn');
+            const pageNameSpan = document.getElementById('pageName');
+            
+            // Variabel untuk menyimpan item yang sedang aktif
+            let activeListItem = null; 
+
+            // --- FUNGSI KLIK LIST ITEM (HANYA UNTUK MENAMPILKAN INDIKATOR) ---
+            listItems.forEach(item => {
+                item.addEventListener('click', function(event) {
+                    
+                    // Cek apakah klik berasal dari area indikator (!)
+                    const rect = this.getBoundingClientRect();
+                    
+                    // Jika klik terjadi di 70px terakhir item, anggap klik pada indikator.
+                    if (event.clientX > rect.right - 70 && this.classList.contains('clicked')) {
+                         
+                        // JIKA KLIK PADA INDIKATOR (!) YANG SUDAH MUNCUL
+                        const pageName = this.getAttribute('data-page');
+                        pageNameSpan.textContent = pageName;
+                        activeListItem = this; // Simpan item yang aktif
+
+                        // Tampilkan Modal (memicu fade in/zoom CSS)
+                        modal.classList.add('active');
+                        return; // Hentikan fungsi agar tidak menjalankan logika default (reset indikator)
+                    }
+
+                    // Logika default: HANYA MENAMPILKAN INDIKATOR (!)
+                    
+                    // 1. Hapus kelas 'clicked' dari semua item lain
+                    listItems.forEach(i => {
+                        i.classList.remove('clicked');
+                    });
+
+                    // 2. Tambahkan kelas 'clicked' ke item yang baru saja diklik
+                    this.classList.add('clicked');
+                });
+            });
+
+            // --- FUNGSI TUTUP MODAL ---
+            const closeModal = () => {
+                modal.classList.remove('active');
+            };
+
+            // Tutup modal saat tombol X diklik
+            closeModalBtn.addEventListener('click', closeModal);
+            
+            // --- FUNGSI TOMBOL LET'S GO (REVISI) ---
+            letsGoBtn.addEventListener('click', () => {
+                const pageName = pageNameSpan.textContent;
+                // Ubah nama halaman menjadi lowercase dan tambahkan .html
+                const targetUrl = pageName.toLowerCase() + '.html'; 
+                
+                // 1. Tutup modal secara visual
+                closeModal();
+                
+                // 2. Terapkan animasi fade-out ke seluruh body
+                body.classList.add('fade-out-page');
+                
+                // 3. Pindah halaman setelah animasi selesai (0.5 detik)
+                setTimeout(() => {
+                    window.location.href = targetUrl;
+                }, 500); // Sesuaikan dengan durasi animasi CSS (0.5s)
+            });
+            
+            // Tutup modal saat overlay (area di luar kotak) diklik
+            modal.addEventListener('click', (event) => {
+                // Pastikan klik hanya terjadi pada overlay (tidak pada modal-content atau lets-go-button)
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>

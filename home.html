@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Learn Bitcoin</title>
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: monospace;
+      background: white;
+    }
+
+    /* ==== Page 1 ==== */
+    section#page1 {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .typing-container {
+      font-size: 2.5rem;
+      font-weight: 300;
+      color: black;
+    }
+
+    .bitcoin {
+      font-weight: 700;
+      color: #f7931a;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 10px;
+      animation: blink 0.7s steps(1) infinite;
+      color: black;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    /* ==== Tombol Panah ==== */
+    .arrow-btn {
+      position: fixed;
+      top: 50px;
+      left: 30px;
+      z-index: 1001;
+      cursor: pointer;
+      background: white;
+      border: 2px solid black;
+      border-radius: 12px;
+      width: 45px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease, opacity 0.5s ease;
+      font-size: 22px;
+    }
+
+    .arrow {
+      transition: transform 0.3s ease;
+    }
+
+    .arrow-btn.active .arrow {
+      transform: translateX(5px);
+    }
+
+    /* ==== Sidebar ==== */
+    .sidebar {
+      position: fixed;
+      top: 20px;
+      left: 0;
+      height: calc(100vh - 40px);
+      width: 80%;
+      max-width: 320px; 
+      border: 2px solid black;
+      border-radius: 16px;
+      background: white;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sidebar.active {
+      transform: translateX(0);
+    }
+
+    /* ==== Overlay Blur ==== */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      animation: blurMove 5s linear infinite;
+      background: rgba(255,255,255,0.1);
+      z-index: 900;
+      display: none;
+    }
+
+    @keyframes blurMove {
+      0% { backdrop-filter: blur(8px); }
+      50% { backdrop-filter: blur(14px); }
+      100% { backdrop-filter: blur(8px); }
+    }
+
+    /* ==== Judul ==== */
+    .sidebar-title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-top: 60px;
+      margin-bottom: 10px;
+    }
+
+    /* ==== List Menu ==== */
+    .menu-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    /* Modifikasi menu-item agar bisa berfungsi sebagai kontainer submenu */
+    .menu-item {
+      display: flex;
+      align-items: center;
+      font-size: 1.1rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 8px 10px;
+      border: none;
+      transition: background-color 0.2s ease;
+    }
+
+    .menu-item img {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      object-fit: cover;
+      margin-right: 12px;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    .menu-item img.hidden {
+      opacity: 0;
+    }
+
+    .menu-text {
+      flex: 1;
+    }
+
+    .menu-arrow {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-left: 10px;
+      transition: transform 0.3s ease;
+    }
+    
+    /* Tambahkan style untuk memutar panah saat submenu terbuka */
+    .menu-item[data-destination="Practice"].open .menu-arrow {
+        transform: rotate(90deg);
+    }
+
+    .menu-item:hover {
+      background: #f8f8f8;
+      border-radius: 8px;
+    }
+    
+    /* ==== Submenu Styling ==== */
+    .submenu-list {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        /* Animasi Sederhana: Menggunakan max-height untuk buka/tutup */
+        max-height: 0; 
+        padding: 0 0 0 0;
+        transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+    }
+    
+    .submenu-list.show {
+        /* Sesuaikan max-height berdasarkan jumlah menu. 100px cukup untuk 3 item */
+        max-height: 100px; 
+        padding: 4px 0 4px 0; /* Tambahkan sedikit padding saat terbuka */
+    }
+    
+    .submenu-item {
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        padding: 6px 10px;
+        background-color: #f0f0f0; /* Latar belakang abu-abu */
+        margin-top: 4px;
+        border-radius: 4px;
+        /* Indentasi: Tambahkan margin kiri agar menjorok */
+        margin-left: 30px; 
+        transition: background-color 0.2s ease;
+    }
+    
+    .submenu-item:hover {
+        background-color: #e0e0e0;
+    }
+
+    /* ==== Modal Style ==== */
+    .modal-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5); 
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000; 
+      padding: 20px;
+      
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .modal-container.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-box {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 16px; 
+      box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+      text-align: center;
+      max-width: 90%;
+      
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-container.show .modal-box {
+      transform: scale(1);
+    }
+
+    .modal-text-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: #333;
+      margin: 0 0 20px 0;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e0e0e0;
+      min-height: 40px;
+    }
+
+    #modalImage {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      object-fit: cover;
+      margin-right: 12px;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out, margin-right 0.3s ease;
+    }
+
+    #modalImage.show {
+      opacity: 1;
+    }
+    
+    /* Style untuk menyembunyikan gambar/ikon di modal */
+    #modalImage.hide {
+        display: none;
+        margin-right: 0;
+    }
+
+    .modal-text {
+      font-size: 1.2rem;
+      color: #333;
+      margin: 0;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 15px; 
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-btn {
+      font-family: monospace;
+      font-size: 1rem;
+      font-weight: bold;
+      padding: 8px 24px;
+      cursor: pointer;
+      border-radius: 8px;
+      background: transparent;
+      transition: all 0.2s ease;
+    }
+
+    .btn-cancel {
+      border: 1px solid #888;
+      color: #888;
+    }
+    .btn-cancel:hover {
+      background: #f1f1f1;
+    }
+
+    .btn-yes {
+      border: 1px solid black;
+      color: black;
+    }
+    .btn-yes:hover {
+      background: black;
+      color: white;
+    }
+
+    .btn-separator {
+      color: #ccc;
+      font-size: 1.5rem;
+      font-weight: 100;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="arrow-btn" id="arrowBtn">
+    <div class="arrow">➜</div>
+  </div>
+
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-title">Proof of Learn</div>
+    <div class="menu-list">
+      <div class="menu-item" data-destination="bitcoin"> 
+        <img src="Learnbitcoin.png" alt="homebitcoin">
+        <span class="menu-text">bitcoin</span>
+        <span class="menu-arrow">›</span>
+      </div>
+      <div class="menu-item" data-destination="Terms">
+        <img src="Terms.png" alt="Terms">
+        <span class="menu-text">Terms</span>
+        <span class="menu-arrow">›</span>
+      </div>
+      <div class="menu-item" data-destination="Nakamoto">
+        <img src="Nakamoto.png" alt="Nakamoto">
+        <span class="menu-text">Nakamoto</span>
+        <span class="menu-arrow">›</span>
+      </div>
+      
+      <div data-is-parent="true">
+          <div class="menu-item" data-destination="Practice" id="practiceMenu">
+            <img src="1.png" alt="Menu 1">
+            <span class="menu-text">Practice</span>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="submenu-list" id="practiceSubmenu">
+            <div class="submenu-item" data-destination="Blockchain">Blockchain</div>
+            <div class="submenu-item" data-destination="Signature">Signature</div>
+            <div class="submenu-item" data-destination="Wallet">Wallet</div>
+          </div>
+      </div>
+      
+      
+      <div class="menu-item" data-destination="Youknow">
+        <img src="Youknow.png" alt="You know?">
+        <span class="menu-text">You know?</span>
+        <span class="menu-arrow">›</span>
+      </div>
+      <div class="menu-item" data-destination="AboutMe">
+        <img src="me.png" alt="About Me">
+        <span class="menu-text">About Me</span>
+        <span class="menu-arrow">›</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay"></div>
+
+  <section id="page1">
+    <div class="typing-container">
+      <span id="word"></span><span class="cursor">|</span> <span class="bitcoin">Bitcoin</span>
+    </div>
+  </section>
+  
+  <div id="customModal" class="modal-container">
+    <div class="modal-box">
+      <div class="modal-text-group">
+        <img id="modalImage" src="" alt="Menu Image" />
+        <p id="modalText" class="modal-text"></p>
+      </div>
+      <div class="modal-buttons">
+        <button id="cancelBtn" class="modal-btn btn-cancel">Cancel</button>
+        <span class="btn-separator">|</span>
+        <button id="yesBtn" class="modal-btn btn-yes">Yes</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Typing Effect
+    (function(){
+      const words = ["Learn", "understand", "become", "believe in"];
+      let wordIndex = 0;
+      let charIndex = 0;
+      let isDeleting = false;
+      const wordElement = document.querySelector("#word");
+
+      function type() {
+        const currentWord = words[wordIndex];
+        if (!isDeleting) {
+          wordElement.textContent = currentWord.substring(0, charIndex + 1);
+          charIndex++;
+          if (charIndex === currentWord.length) {
+            setTimeout(() => isDeleting = true, 1000);
+          }
+        } else {
+          wordElement.textContent = currentWord.substring(0, charIndex - 1);
+          charIndex--;
+          if (charIndex === 0) {
+            isDeleting = false;
+            wordIndex = (wordIndex + 1) % words.length;
+          }
+        }
+        setTimeout(type, isDeleting ? 100 : 200);
+      }
+
+      type();
+    })();
+
+    // Toggle Sidebar
+    const arrowBtn = document.getElementById("arrowBtn");
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("overlay");
+
+    arrowBtn.addEventListener("click", () => {
+      sidebar.classList.toggle("active");
+      arrowBtn.classList.toggle("active");
+      if (sidebar.classList.contains("active")) {
+        overlay.style.display = "block";
+        arrowBtn.style.opacity = "0";
+      } else {
+        overlay.style.display = "none";
+        arrowBtn.style.opacity = "1";
+      }
+    });
+
+    overlay.addEventListener("click", () => {
+      sidebar.classList.remove("active");
+      arrowBtn.classList.remove("active");
+      overlay.style.display = "none";
+      arrowBtn.style.opacity = "1";
+    });
+
+    /* ==== Modal Logic ==== */
+    const menuItems = document.querySelectorAll(".menu-item:not(#practiceMenu)");
+    const practiceMenu = document.getElementById("practiceMenu");
+    const practiceSubmenu = document.getElementById("practiceSubmenu");
+    const submenuItems = document.querySelectorAll(".submenu-item");
+    
+    const modal = document.getElementById("customModal");
+    const modalText = document.getElementById("modalText");
+    const modalImage = document.getElementById("modalImage");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const yesBtn = document.getElementById("yesBtn");
+    
+    let lastClickedMenuName = "";
+    let lastClickedImage = null;
+    let isSubmenuClick = false; 
+
+    function showModal(menuName, imgSrc, isSubmenu = false) {
+      lastClickedMenuName = menuName; 
+      isSubmenuClick = isSubmenu;
+      
+      // Hapus tanda kutip dari teks modal
+      modalText.textContent = `jump to ${menuName}?`;
+      
+      // Logika untuk menampilkan gambar di modal
+      if (isSubmenu) {
+        // Tampilkan gambar 1.png untuk submenu
+        modalImage.classList.remove("hide");
+        modalImage.src = '1.png'; 
+        setTimeout(() => {
+          modalImage.classList.add("show");
+        }, 50);
+      } else {
+        // Tampilkan gambar menu utama
+        modalImage.classList.remove("hide"); 
+        modalImage.src = imgSrc;
+        setTimeout(() => {
+          modalImage.classList.add("show");
+        }, 50);
+      }
+      
+      modal.classList.add("show");
+    }
+
+    function hideModal() {
+      lastClickedMenuName = "";
+      isSubmenuClick = false;
+      modal.classList.remove("show");
+      modalImage.classList.remove("show");
+
+      if (lastClickedImage) {
+        lastClickedImage.classList.remove("hidden");
+        lastClickedImage = null;
+      }
+      modalImage.classList.remove("hide");
+    }
+
+    // Event Listener untuk menu UTAMA (selain Practice)
+    menuItems.forEach(item => {
+      item.addEventListener("click", () => {
+        const menuItemName = item.querySelector(".menu-text").textContent;
+        const menuItemImage = item.querySelector("img");
+
+        menuItemImage.classList.add("hidden");
+        lastClickedImage = menuItemImage;
+
+        showModal(menuItemName, menuItemImage.src, false);
+      });
+    });
+
+    // Event Listener untuk tombol Practice (Toggle Submenu)
+    practiceMenu.addEventListener("click", () => {
+        practiceSubmenu.classList.toggle("show");
+        practiceMenu.classList.toggle("open");
+        lastClickedImage = null; 
+    });
+    
+    // Event Listener untuk item SUBMENU
+    submenuItems.forEach(item => {
+        item.addEventListener("click", (event) => {
+            event.stopPropagation(); 
+            const submenuItemName = item.textContent;
+            
+            // Tampilkan modal dengan gambar 1.png (isSubmenu = true)
+            showModal(submenuItemName, '', true);
+        });
+    });
+
+
+    cancelBtn.addEventListener("click", hideModal);
+    
+    // Logika Tombol YES yang Diperbarui UNTUK NAVIGASI
+    yesBtn.addEventListener("click", () => {
+      if (lastClickedMenuName) {
+        let navigationUrl = '';
+        
+        // Cek jika menu yang diklik adalah submenu Practice
+        if (isSubmenuClick) {
+            const menu = lastClickedMenuName.toLowerCase();
+            switch (menu) {
+                case 'wallet':
+                    navigationUrl = 'pwallet.html'; // Navigasi khusus
+                    break;
+                case 'blockchain':
+                    navigationUrl = 'pblockchain.html'; // Navigasi khusus
+                    break;
+                case 'signature':
+                    navigationUrl = 'psignature.html'; // Navigasi khusus
+                    break;
+                default:
+                    navigationUrl = `${menu}.html`;
+            }
+        } else if (lastClickedMenuName.toLowerCase() === 'bitcoin') {
+          // Logika untuk menu utama 'bitcoin'
+          navigationUrl = 'dashboard.html'; 
+        } else {
+          // Logika URL default untuk menu utama lainnya
+          let fileName = lastClickedMenuName.replace(/[^a-zA-Z0-9]/g, '');
+          navigationUrl = `${fileName}.html`;
+        }
+        
+        if (navigationUrl) {
+          console.log(`Navigating to: ${navigationUrl}`);
+          window.location.href = navigationUrl; // Aktifkan navigasi
+        }
+      }
+      hideModal();
+    });
+
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        hideModal();
+      }
+    });
+  </script>
+  <footer style="position: fixed; left: 0; bottom: 0; width: 100%; text-align: center; background-color: white; padding: 10px 0;">
+    <p style="margin: 0;">@Prentice_al</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bitcoin Wallet</title>
+  <style>
+    :root {
+      --background-color: #ffffff;
+      --text-color: #222222;
+      --primary-color: #000000;
+      --border-color: #e0e0e0;
+      --hover-bg-color: #f5f5f5;
+      --modal-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      --danger-color: #d93025;
+    }
+    
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      font-family: monospace;
+      background: var(--background-color);
+      color: var(--text-color);
+      scroll-behavior: smooth;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+
+    /* Header */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: var(--background-color);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      box-sizing: border-box;
+      z-index: 1001;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    .header.hidden {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+
+    .header .title {
+      font-weight: 600;
+      font-size: 20px;
+    }
+
+    .hamburger-btn {
+      cursor: pointer;
+      background: none;
+      border: none;
+      outline: none;
+      padding: 8px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      transition: background-color 0.2s ease;
+    }
+    .hamburger-btn:hover {
+      background-color: var(--hover-bg-color);
+    }
+    .hamburger-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: var(--text-color);
+    }
+
+    /* Hamburger Menu */
+    .hamb-list {
+      position: fixed;
+      top: 60px;
+      right: 0;
+      width: 250px;
+      background: var(--background-color);
+      border-bottom-left-radius: 12px;
+      box-shadow: var(--modal-shadow);
+      z-index: 1000;
+      transform: translateX(100%);
+      transition: transform 0.3s ease-in-out;
+      list-style: none;
+      padding: 10px 0;
+      margin: 0;
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .hamb-list.active {
+      transform: translateX(0);
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .hamb-list li a {
+      padding: 14px 24px;
+      display: block;
+      text-decoration: none;
+      color: var(--text-color);
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .hamb-list li a:hover {
+      background-color: var(--hover-bg-color);
+    }
+
+    /* Sections */
+    .section {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 60px 20px;
+      box-sizing: border-box;
+      background: var(--background-color);
+      position: relative;
+    }
+    
+    .settings-btn {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      outline: none;
+      padding: 8px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      transition: background-color 0.2s ease, transform 0.3s ease;
+    }
+    .settings-btn:hover {
+      background-color: var(--hover-bg-color);
+      transform: rotate(20deg);
+    }
+    .settings-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: var(--text-color);
+    }
+
+    .wallet-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 25px;
+      text-align: center;
+    }
+    
+    .wallet-info h2 {
+      font-size: 2rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    
+    .button-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .actions-row {
+        display: flex;
+        gap: 15px;
+    }
+
+    .wallet-btn {
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background-color: var(--background-color);
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .wallet-btn:hover {
+      background-color: var(--hover-bg-color);
+    }
+    
+    .btc-balance-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      background: var(--hover-bg-color);
+      padding: 10px 15px;
+      border-radius: 20px;
+    }
+
+    .btc-icon {
+      width: 40px;     /* atur sesuai kebutuhan */
+      height: auto;    /* biar proporsional */
+    }
+    
+
+    .btc-amount {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    
+    hr {
+      border: none;
+      height: 1px;
+      background-color: var(--border-color);
+      margin: 0;
+      width: 100%;
+    }
+
+    /* Overlay */
+    .overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4);
+      z-index: 1002;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 90%;
+      max-width: 400px;
+      max-height: 80vh;
+      transform: translate(-50%, -50%) scale(0.95);
+      background: var(--background-color);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      z-index: 1003;
+      padding: 24px;
+      box-sizing: border-box;
+      box-shadow: var(--modal-shadow);
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      /* Overflow default diatur di sini, khusus history akan diubah */
+      overflow-y: auto;
+    }
+
+    .modal.active {
+      display: block;
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    
+    /* MODIFIKASI untuk Modal History Fixed Footer */
+    #historyModal.active {
+        display: flex;
+        flex-direction: column;
+        padding: 0; /* Padding di-handle oleh child element */
+    }
+    #historyModal h3 {
+        padding: 24px 24px 20px 24px;
+        margin: 0;
+    }
+    #historyModal #historyContent {
+        flex-grow: 1; /* Konten mengambil sisa ruang */
+        overflow-y: auto; /* HANYA konten yang bisa di-scroll */
+        padding: 0 24px;
+        border-top: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-color);
+    }
+    #historyModal #historyContent div {
+        margin-top: 15px;
+    }
+    #historyModal .btn-group {
+        flex-shrink: 0; /* Footer tidak akan mengecil */
+        padding: 15px 24px 24px 24px;
+        margin-top: 0;
+    }
+    
+    .modal h3 {
+      margin: 0 0 20px 0;
+      color: var(--text-color);
+      text-align: center;
+      font-size: 22px;
+      font-weight: 600;
+    }
+    
+    .modal p {
+      text-align: center;
+      font-size: 16px;
+    }
+
+    .modal label {
+      font-weight: 500;
+      font-size: 14px;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .modal input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      box-sizing: border-box;
+      background-color: var(--hover-bg-color);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .amount-input-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 15px;
+    }
+    .amount-input-container input {
+        flex-grow: 1;
+        margin-bottom: 0;
+    }
+    .max-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: bold;
+        font-family: inherit;
+        border-radius: 6px;
+        cursor: pointer;
+        border: 1px solid var(--border-color);
+        background-color: var(--hover-bg-color);
+        color: var(--text-color);
+        flex-shrink: 0;
+        transition: border-color 0.2s ease;
+    }
+    .max-btn:hover {
+        border-color: var(--primary-color);
+    }
+
+    .modal input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+    }
+
+    .modal .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .modal button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 16px;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      border: 1px solid var(--primary-color);
+      background: var(--background-color);
+      color: var(--primary-color);
+    }
+
+    .modal button.primary {
+      background: var(--primary-color);
+      color: var(--background-color);
+    }
+    
+    .modal button:hover {
+        background-color: var(--hover-bg-color);
+    }
+
+    .modal button.primary:hover {
+      opacity: 0.85;
+      background-color: var(--primary-color);
+    }
+    
+    .address-display {
+      background: var(--hover-bg-color);
+      border: 1px solid var(--border-color);
+      padding: 12px;
+      border-radius: 8px;
+      word-break: break-all;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 14px;
+      margin: 10px 0 20px 0;
+      text-align: center;
+    }
+
+    .wallet-details {
+      font-size: 14px;
+      color: #444;
+    }
+
+    .wallet-details div {
+      margin-bottom: 15px;
+      word-break: break-all;
+      padding: 12px;
+      background: var(--hover-bg-color);
+      border-radius: 8px;
+    }
+    .wallet-details strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--text-color);
+    }
+    .wallet-details span.tx-type {
+        font-weight: bold;
+        font-size: 16px;
+        margin-bottom: 8px;
+        display: block;
+    }
+    .wallet-details span.tx-type.send { color: var(--danger-color); }
+    .wallet-details span.tx-type.receive { color: #2e7d32; }
+    .wallet-details .timestamp {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #666;
+        display: block;
+    }
+
+
+    .settings-menu {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .settings-menu li {
+      padding: 15px;
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.2s ease;
+    }
+    .settings-menu li:first-child {
+        border-top: 1px solid var(--border-color);
+    }
+    .settings-menu li.danger-item:hover {
+        background-color: #fbe9e7;
+        color: var(--danger-color);
+    }
+
+    .settings-menu li:hover {
+      background: var(--hover-bg-color);
+    }
+    
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #333;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 9999;
+      font-size: 14px;
+      transition: bottom 0.5s ease-in-out;
+    }
+
+    .toast.show {
+      bottom: 30px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header" id="header">
+    <div class="title">Bitcoin Wallet</div>
+    <button class="hamburger-btn" id="openMenu" aria-label="Menu">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M3 18h18v-2H3v2Zm0-5h18v-2H3v2Zm0-7v2h18V6H3Z"/>
+      </svg>
+    </button>
+  </div>
+  
+  <ul class="hamb-list" id="hambList">
+    <li><a href="#" id="addWallet">Add Wallet</a></li>
+    <li><a href="#" id="importWallet">Import Wallet (WIF)</a></li>
+    <li><a href="home.html">Back &gt;</a></li>
+  </ul>
+
+  <div class="overlay" id="overlay"></div>
+
+  <div class="modal" id="settingsModal"></div>
+  
+  <div class="modal" id="receiveModal">
+    <h3>Receive Bitcoin</h3>
+    <p>Your Bitcoin Address:</p>
+    <div class="address-display" id="receiveAddress"></div>
+    <div class="btn-group">
+      <button id="copyAddressBtn">Copy</button>
+      <button id="closeReceiveBtn" class="primary">Close</button>
+    </div>
+  </div>
+
+  <div class="modal" id="sendModal">
+    <h3>Send Bitcoin</h3>
+    <label for="recipientAddress">Recipient Address:</label>
+    <input type="text" id="recipientAddress" placeholder="Enter Bitcoin address" style="margin-bottom: 15px;">
+    
+    <label for="sendAmount">Amount (BTC):</label>
+    <div class="amount-input-container">
+        <input type="text" id="sendAmount" placeholder="0.00000000"> <button id="maxAmountBtn" class="max-btn">MAX</button>
+    </div>
+    
+    <div class="btn-group">
+      <button id="cancelSendBtn">Cancel</button>
+      <button id="confirmSendBtn" class="primary">Send</button>
+    </div>
+  </div>
+
+  <div class="modal" id="importModal">
+    <h3>Import Wallet</h3>
+    <label for="wifInput">Enter WIF Private Key:</label>
+    <input type="text" id="wifInput" placeholder="Starts with 5, K, or L" style="margin-bottom: 15px;">
+    <div class="btn-group">
+      <button id="cancelImport">Cancel</button>
+      <button id="confirmImport" class="primary">Import</button>
+    </div>
+  </div>
+
+  <div class="modal" id="addBtcModal">
+    <h3>Add BTC</h3>
+    <label for="addBtcAmount">Amount (BTC):</label>
+    <input type="text" id="addBtcAmount" placeholder="0.00000000" style="margin-bottom: 15px;"> <div class="btn-group">
+      <button id="cancelAddBtc">Cancel</button>
+      <button id="confirmAddBtc" class="primary">Add BTC</button>
+    </div>
+  </div>
+
+  <div class="modal" id="historyModal">
+    <h3>Transaction History</h3>
+    <div id="historyContent" class="wallet-details"></div>
+    <div class="btn-group">
+      <button id="backToSettingsBtn">Back</button>
+    </div>
+  </div>
+
+  <div class="modal" id="deleteConfirmModal">
+    <h3>Delete Confirmation</h3>
+    <p>Delete wallet ini?</p>
+    <div class="btn-group">
+      <button id="cancelDeleteBtn">Tidak</button>
+      <button id="confirmDeleteBtn">Iya</button>
+    </div>
+  </div>
+
+
+  <div id="walletsContainer"></div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <script>
+    const hambList = document.getElementById('hambList');
+    const openMenuBtn = document.getElementById('openMenu');
+    const overlay = document.getElementById('overlay');
+    const walletsContainer = document.getElementById('walletsContainer');
+    const header = document.getElementById('header');
+
+    const modals = {
+        settings: document.getElementById('settingsModal'),
+        receive: document.getElementById('receiveModal'),
+        send: document.getElementById('sendModal'),
+        import: document.getElementById('importModal'),
+        addBtc: document.getElementById('addBtcModal'),
+        history: document.getElementById('historyModal'),
+        deleteConfirm: document.getElementById('deleteConfirmModal')
+    };
+    
+    let wallets = [];
+    let currentWalletIndex = -1;
+
+    // --- Utility Functions ---
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    }
+
+    function escapeHTML(str) {
+        if (typeof str !== 'string') return '';
+        return str.replace(/[&<>"']/g, match => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[match]));
+    }
+    
+    function formatTimestamp(isoString) {
+        if (!isoString) return '';
+        const date = new Date(isoString);
+        
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+
+        return `${day}/${month}/${year}<br>${hours}:${minutes}:${seconds}`;
+    }
+    
+    // Fungsi Logik Desimal Real-time
+    function enforceBitcoinDecimalLimit(event) {
+        let input = event.target;
+        let value = input.value;
+
+        // Cek jika karakter terakhir yang diketik membuat nilai tidak valid
+        if (value.includes('.') && value.split('.')[1].length > 8) {
+            input.value = input.oldValue || '';
+        } else {
+            input.oldValue = value;
+        }
+        
+        // Pembersihan input
+        input.value = input.value.replace(/,/g, '.').replace(/[^\d.]/g, function(match, offset, string) {
+            if (match === '.' && string.indexOf('.') !== offset) {
+                return '';
+            }
+            return match === '.' ? '.' : '';
+        });
+        
+        // Cek lagi batas 8 desimal
+        let finalValue = input.value;
+        if (finalValue.includes('.')) {
+            const decimalPart = finalValue.split('.')[1];
+            if (decimalPart.length > 8) {
+                input.value = finalValue.substring(0, finalValue.indexOf('.') + 9);
+            }
+        }
+    }
+
+    // --- Wallet & Crypto Functions (Tidak Berubah, biarkan seperti di prompt) ---
+    function saveWalletsToStorage() { try { localStorage.setItem('bitcoin_wallets', JSON.stringify(wallets)); } catch (e) { console.error('Error saving:', e); } }
+    function loadWalletsFromStorage() { try { const s = localStorage.getItem('bitcoin_wallets'); if (s) { wallets = JSON.parse(s); return true; } } catch (e) { console.error('Error loading:', e); } return false; }
+    const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    function base58Encode(buffer){if(buffer.length===0)return '';let d=[0];for(let i=0;i<buffer.length;i++){let c=buffer[i];for(let j=0;j<d.length;j++){c+=d[j]<<8;d[j]=c%58;c=(c/58)|0}while(c>0){d.push(c%58);c=(c/58)|0}}for(let i=0;i<buffer.length&&buffer[i]===0;i++)d.push(0);return d.reverse().map(digit=>BASE58_ALPHABET[digit]).join('')}
+    function base58Decode(string){if(string.length===0)return new Uint8Array(0);let b=[0];for(let i=0;i<string.length;i++){let v=BASE58_ALPHABET.indexOf(string[i]);if(v===-1)throw new Error('Invalid base58');let c=v;for(let j=0;j<b.length;j++){c+=b[j]*58;b[j]=c&0xff;c>>=8}while(c>0){b.push(c&0xff);c>>=8}}for(let i=0;i<string.length&&string[i]===BASE58_ALPHABET[0];i++)b.push(0);return new Uint8Array(b.reverse())}
+    function sha256Buffer(buffer){return CryptoJS.SHA256(CryptoJS.lib.WordArray.create(buffer))}
+    function ripemd160(data){return CryptoJS.RIPEMD160(data)}
+    function generatePrivateKey(){const a=new Uint8Array(32);crypto.getRandomValues(a);return Array.from(a)}
+    function privateKeyToWIF(privateKey,compressed=false){let e=[0x80,...privateKey];if(compressed)e.push(0x01);const h1=sha256Buffer(new Uint8Array(e));const h2=sha256Buffer(new Uint8Array(h1.words.map(w=>[(w>>>24)&0xff,(w>>>16)&0xff,(w>>>8)&0xff,w&0xff]).flat()));const c=h2.words.slice(0,1).map(w=>[(w>>>24)&0xff,(w>>>16)&0xff,(w>>>8)&0xff,w&0xff]).flat().slice(0,4);return base58Encode(new Uint8Array([...e,...c]))}
+    function wifToPrivateKey(wif){try{const d=base58Decode(wif);if(d.length<37)throw new Error('Invalid WIF length');const p=d.slice(0,-4);const c=d.slice(-4);const h1=sha256Buffer(p);const h2=sha256Buffer(new Uint8Array(h1.words.map(w=>[(w>>>24)&0xff,(w>>>16)&0xff,(w>>>8)&0xff,w&0xff]).flat()));const cc=h2.words.slice(0,1).map(w=>[(w>>>24)&0xff,(w>>>16)&0xff,(w>>>8)&0xff,w&0xff]).flat().slice(0,4);if(!c.every((b,i)=>b===cc[i]))throw new Error('Invalid WIF checksum');if(p[0]!==0x80)throw new Error('Invalid WIF version');const pk=Array.from(p.slice(1,33));const comp=p.length===34;return{privateKey:pk,compressed:comp}}catch(e){throw new Error('Invalid WIF format: '+e.message)}}
+    function getPublicKeyFromPrivate(privateKey){const h=sha256Buffer(new Uint8Array(privateKey));const pk=new Uint8Array(65);pk[0]=0x04;const hw=h.words;for(let i=0;i<8;i++){const w=hw[i%hw.length];pk[1+i*4]=(w>>>24)&0xff;pk[1+i*4+1]=(w>>>16)&0xff;pk[1+i*4+2]=(w>>>8)&0xff;pk[1+i*4+3]=w&0xff}const h2=sha256Buffer(h);const h2w=h2.words;for(let i=0;i<8;i++){const w=h2w[i%h2w.length];pk[33+i*4]=(w>>>24)&0xff;pk[33+i*4+1]=(w>>>16)&0xff;pk[33+i*4+2]=(w>>>8)&0xff;pk[33+i*4+3]=w&0xff}return Array.from(pk)}
+    function publicKeyToP2PKHAddress(publicKey){const pkh=sha256Buffer(new Uint8Array(publicKey));const r=ripemd160(pkh);const ra=r.words.map(w=>[(w>>>24)&0xff,(w>>>16)&0xff,(w>>>8)&0xff,w&0xff]).flat().slice(0,20);const e=[0x00,...ra];const h1=sha256Buffer(new Uint8Array(e));const h2=sha256Buffer(new Uint8Array(h1.words.map(w=>[(w>>>24)&0xff,(w>>>16)&0xff,(w>>>8)&0xff,w&0xff]).flat()));const c=h2.words.slice(0,1).map(w=>[(w>>>24)&0xff,(w>>>16)&0xff,(w>>>8)&0xff,w&0xff]).flat().slice(0,4);return base58Encode(new Uint8Array([...e,...c]))}
+    // *PERUBAHAN DI SINI* - Menambahkan logika penamaan
+    function generateWallet(){
+        const p=generatePrivateKey();
+        const newWallet = {
+            privateKey:p,
+            wif:privateKeyToWIF(p,false),
+            publicKey:getPublicKeyFromPrivate(p),
+            address:publicKeyToP2PKHAddress(getPublicKeyFromPrivate(p)),
+            balance:0, 
+            name: '', 
+            history: []
+        };
+        // Logika sederhana: jika tidak ada wallet, beri nama khusus
+        if (wallets.length === 0) {
+            newWallet.name = 'sudahsayaungkapkan';
+        } else {
+            // Untuk wallet berikutnya, gunakan penamaan berurutan
+            newWallet.name = `Wallet ${wallets.length + 1}`;
+        }
+        return newWallet;
+    }
+    // --- Akhir Wallet & Crypto Functions ---
+
+    // --- UI Rendering ---
+    function createWalletSection(wallet, index) {
+      const section = document.createElement('div');
+      section.className = 'section fade-in';
+      section.innerHTML = `
+        <button class="settings-btn" aria-label="Settings" onclick="openWalletSettings(${index})">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.4.12-.61l-1.92-3.32c-.11-.21-.36-.3-.58-.22l-2.39.96c-.5-.38-1.04-.7-1.64-.94l-.36-2.54a.488.488 0 0 0-.48-.41h-3.84c-.24 0-.44.17-.48.41l-.36 2.54c-.6.24-1.14.56-1.64.94l-2.39-.96c-.22-.09-.47.01-.58-.22L2.71 8.87c-.12.21-.07.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.52c-.18.14-.23.4-.12.61l1.92 3.32c.11.21.36.3.58.22l2.39-.96c.5.38 1.04.7 1.64.94l.36 2.54c.04.24.24.41.48.41h3.84c.24 0 .44-.17-.48.41l.36-2.54c.6-.24 1.14-.56 1.64-.94l2.39.96c.22.09.47-.01-.58-.22l1.92-3.32c.11-.21.06-.47-.12-.61l-2.03-1.58ZM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6Z"/></svg>
+        </button>
+        <div class="wallet-info">
+          <h2>${escapeHTML(wallet.name)}</h2>
+        </div>
+        <div class="button-container">
+            <div class="btc-balance-row">
+                <img src="bitcoin.png" alt="Bitcoin Icon" class="btc-icon">
+                <span class="btc-amount">${wallet.balance.toFixed(8)} BTC</span>
+            </div>
+            <div class="actions-row">
+                <button class="wallet-btn" onclick="openSendModal(${index})">Send</button>
+                <button class="wallet-btn" onclick="openReceiveModal(${index})">Receive</button>
+            </div>
+        </div>`;
+      return section;
+    }
+
+    function renderWallets() {
+      walletsContainer.innerHTML = '';
+      wallets.forEach((wallet, index) => {
+        if (index > 0) walletsContainer.appendChild(document.createElement('hr'));
+        walletsContainer.appendChild(createWalletSection(wallet, index));
+      });
+      saveWalletsToStorage();
+    }
+
+    // --- Modal Management ---
+    function openModal(modal) { modal.classList.add('active'); overlay.classList.add('active'); }
+    function closeModal() {
+        for (const key in modals) { modals[key].classList.remove('active'); }
+        overlay.classList.remove('active');
+    }
+
+    window.openReceiveModal = (index) => {
+        document.getElementById('receiveAddress').textContent = wallets[index].address;
+        openModal(modals.receive);
+    };
+    window.openSendModal = (index) => { 
+        currentWalletIndex = index; 
+        document.getElementById('sendAmount').value = ''; // Bersihkan input saat membuka
+        openModal(modals.send); 
+    };
+    window.openWalletSettings = (index) => {
+        currentWalletIndex = index;
+        renderSettingsMenu();
+        openModal(modals.settings);
+    };
+    
+    // --- Settings Modal Content ---
+    function renderSettingsMenu() {
+        modals.settings.innerHTML = `
+            <h3>Wallet Settings</h3>
+            <ul class="settings-menu">
+              <li id="changeNameBtnDynamic">Ubah nama</li>
+              <li id="addBtcBtnDynamic">Add BTC</li>
+              <li id="viewDetailsBtnDynamic">View Details</li>
+              <li id="historyBtnDynamic">History</li>
+              <li id="deleteWalletBtnDynamic" class="danger-item">Delete Wallet</li>
+            </ul>
+            <div class="btn-group"> <button onclick="closeModal()">Close</button> </div>`;
+        document.getElementById('changeNameBtnDynamic').onclick = renderChangeNameMenu;
+        document.getElementById('addBtcBtnDynamic').onclick = () => { 
+            closeModal(); 
+            document.getElementById('addBtcAmount').value = ''; // Bersihkan input saat membuka
+            openModal(modals.addBtc); 
+        };
+        document.getElementById('viewDetailsBtnDynamic').onclick = showWalletDetails;
+        document.getElementById('historyBtnDynamic').onclick = showWalletHistory;
+        document.getElementById('deleteWalletBtnDynamic').onclick = openDeleteConfirmation;
+    }
+
+    function renderChangeNameMenu() {
+        modals.settings.innerHTML = `
+            <h3>Ubah Nama Wallet</h3>
+            <label for="walletNameInput">Nama Wallet Baru:</label>
+            <input type="text" id="walletNameInput" value="${escapeHTML(wallets[currentWalletIndex].name)}" placeholder="Masukkan nama baru" style="margin-bottom: 15px;">
+            <div class="btn-group">
+                <button onclick="renderSettingsMenu()">Batal</button>
+                <button id="saveNameBtn" class="primary">Simpan</button>
+            </div>`;
+        document.getElementById('saveNameBtn').onclick = saveWalletName;
+        document.getElementById('walletNameInput').focus();
+    }
+
+    function saveWalletName() {
+        const newName = document.getElementById('walletNameInput').value.trim();
+        if (newName) {
+            wallets[currentWalletIndex].name = newName;
+            renderWallets();
+            closeModal();
+            showToast('Nama wallet berhasil diubah!');
+        } else {
+            showToast('Nama tidak boleh kosong.');
+        }
+    }
+    
+    function showWalletDetails() {
+        const wallet = wallets[currentWalletIndex];
+        modals.settings.innerHTML = `
+            <h3>${escapeHTML(wallet.name)} Details</h3>
+            <div class="wallet-details">
+              <div><strong>Address:</strong>${wallet.address}</div>
+              <div><strong>Private Key (WIF):</strong>${wallet.wif}</div>
+              <div><strong>Public Key:</strong>${wallet.publicKey.map(b => b.toString(16).padStart(2, '0')).join('')}</div>
+            </div>
+            <div class="btn-group"> <button onclick="renderSettingsMenu()">Back</button> </div>`;
+    }
+
+    function showWalletHistory() {
+        const wallet = wallets[currentWalletIndex];
+        const historyContent = document.getElementById('historyContent');
+        historyContent.innerHTML = ''; 
+
+        if (wallet.history && wallet.history.length > 0) {
+            const sortedHistory = [...wallet.history].reverse();
+            sortedHistory.forEach(tx => {
+                const txElement = document.createElement('div');
+                const formattedTime = formatTimestamp(tx.timestamp);
+                const txType = tx.type || 'Send';
+                let content = '';
+
+                if (txType === 'Send') {
+                    content = `
+                        <span class="tx-type send">Send</span>
+                        <strong>From:</strong> ${escapeHTML(tx.from)}<br>
+                        <strong>To:</strong> ${escapeHTML(tx.to)}<br>
+                        <strong>Amount btc:</strong> ${tx.amount}
+                        <span class="timestamp">${formattedTime}</span>`;
+                } else { // Receive
+                    content = `
+                        <span class="tx-type receive">Receive</span>
+                        <strong>From:</strong> ${escapeHTML(tx.from)}<br>
+                        <strong>To:</strong> ${escapeHTML(wallet.address)}<br>
+                        <strong>Amount btc:</strong> ${tx.amount}
+                        <span class="timestamp">${formattedTime}</span>`;
+                }
+                
+                txElement.innerHTML = content;
+                historyContent.appendChild(txElement);
+            });
+        } else {
+            historyContent.innerHTML = '<p style="padding: 20px 0;">No transaction history found.</p>';
+        }
+
+        modals.settings.classList.remove('active');
+        openModal(modals.history);
+    }
+
+    function openDeleteConfirmation() {
+        modals.settings.classList.remove('active');
+        openModal(modals.deleteConfirm);
+    }
+
+    // --- Event Listeners ---
+    openMenuBtn.addEventListener('click', () => hambList.classList.toggle('active'));
+    overlay.addEventListener('click', () => { closeModal(); hambList.classList.remove('active'); });
+
+    document.getElementById('addWallet').addEventListener('click', (e) => {
+        e.preventDefault();
+        // *PERUBAHAN DI SINI* - Menggunakan generateWallet() yang sudah termasuk logika penamaan
+        const newWallet = generateWallet(); 
+        wallets.push(newWallet);
+        renderWallets();
+        hambList.classList.remove('active');
+        showToast('New wallet created!');
+    });
+
+    document.getElementById('importWallet').addEventListener('click', (e) => {
+        e.preventDefault();
+        openModal(modals.import);
+        hambList.classList.remove('active');
+    });
+
+    document.getElementById('copyAddressBtn').addEventListener('click', () => {
+        navigator.clipboard.writeText(document.getElementById('receiveAddress').textContent)
+            .then(() => showToast('Address copied to clipboard!'));
+    });
+    document.getElementById('closeReceiveBtn').addEventListener('click', closeModal);
+    document.getElementById('maxAmountBtn').addEventListener('click', () => {
+        if (currentWalletIndex > -1) {
+            document.getElementById('sendAmount').value = wallets[currentWalletIndex].balance.toFixed(8);
+        }
+    });
+
+    document.getElementById('confirmSendBtn').addEventListener('click', () => {
+        const recipientAddress = document.getElementById('recipientAddress').value.trim();
+        const amount = parseFloat(document.getElementById('sendAmount').value); 
+
+        if (!recipientAddress) return showToast('Please enter a recipient address.');
+        if (isNaN(amount) || amount <= 0) return showToast('Please enter a valid amount.');
+        
+        const senderWallet = wallets[currentWalletIndex];
+        if (amount > senderWallet.balance) return showToast('Insufficient balance.');
+
+        const txTimestamp = new Date().toISOString();
+
+        // Update sender wallet
+        const senderHistoryEntry = {
+            type: 'Send',
+            from: senderWallet.address,
+            to: recipientAddress,
+            amount: amount.toFixed(8),
+            timestamp: txTimestamp
+        };
+        senderWallet.history.push(senderHistoryEntry);
+        senderWallet.balance -= amount;
+
+        // Update recipient wallet if it exists locally
+        const recipientWallet = wallets.find(w => w.address === recipientAddress);
+        if (recipientWallet) {
+            recipientWallet.balance += amount;
+            const recipientHistoryEntry = {
+                type: 'Receive',
+                from: senderWallet.address,
+                to: recipientWallet.address,
+                amount: amount.toFixed(8),
+                timestamp: txTimestamp
+            };
+            if (!recipientWallet.history) recipientWallet.history = [];
+            recipientWallet.history.push(recipientHistoryEntry);
+        }
+
+        renderWallets();
+        closeModal();
+        document.getElementById('recipientAddress').value = '';
+        document.getElementById('sendAmount').value = '';
+        showToast(`Successfully sent ${amount.toFixed(8)} BTC.`);
+    });
+    document.getElementById('cancelSendBtn').addEventListener('click', closeModal);
+
+    document.getElementById('confirmImport').addEventListener('click', () => {
+        const wif = document.getElementById('wifInput').value.trim();
+        if (!wif) return showToast('Please enter a WIF private key.');
+        try {
+            const { privateKey } = wifToPrivateKey(wif);
+            const address = publicKeyToP2PKHAddress(getPublicKeyFromPrivate(privateKey));
+            if (wallets.find(w => w.address === address)) return showToast('Wallet already exists!');
+            
+            // *PERUBAHAN DI SINI* - Menggunakan logika penamaan yang sama saat import
+            const newWallet = { ...wifToPrivateKey(wif), address, balance: 0, history: [] };
+            if (wallets.length === 0) {
+                 newWallet.name = 'sudahsayaungkapkan';
+            } else {
+                 newWallet.name = `Imported ${wallets.length + 1}`;
+            }
+            
+            wallets.push(newWallet);
+            renderWallets();
+            closeModal();
+            document.getElementById('wifInput').value = '';
+            showToast('Wallet imported successfully!');
+        } catch (error) { showToast('Error: ' + error.message); }
+    });
+    document.getElementById('cancelImport').addEventListener('click', closeModal);
+
+    document.getElementById('confirmAddBtc').addEventListener('click', () => {
+        const amount = parseFloat(document.getElementById('addBtcAmount').value); 
+        if (isNaN(amount) || amount <= 0) return showToast('Please enter a valid amount.');
+
+        const wallet = wallets[currentWalletIndex];
+        const txTimestamp = new Date().toISOString();
+
+        const historyEntry = {
+            type: 'Receive',
+            from: 'Freebtc.exe', 
+            to: wallet.address,  
+            amount: amount.toFixed(8),
+            timestamp: txTimestamp
+        };
+
+        // Menambahkan ke riwayat dan memperbarui saldo
+        wallet.history.push(historyEntry);
+        wallet.balance += amount;
+
+        renderWallets();
+        closeModal();
+        document.getElementById('addBtcAmount').value = '';
+        showToast(`Added ${amount.toFixed(8)} BTC.`);
+    });
+    document.getElementById('cancelAddBtc').addEventListener('click', closeModal);
+
+    document.getElementById('backToSettingsBtn').addEventListener('click', () => {
+        modals.history.classList.remove('active');
+        modals.settings.classList.add('active');
+    });
+
+    document.getElementById('cancelDeleteBtn').addEventListener('click', closeModal);
+    document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+        const walletName = wallets[currentWalletIndex].name;
+        wallets.splice(currentWalletIndex, 1);
+        renderWallets();
+        closeModal();
+        showToast(`${walletName} deleted.`);
+    });
+    
+    // Hide header on scroll
+    let lastScrollY = window.scrollY;
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > lastScrollY && window.scrollY > 100) {
+            header.classList.add('hidden');
+        } else { header.classList.remove('hidden'); }
+        lastScrollY = window.scrollY;
+    });
+
+    // Initialize
+    function initialize() {
+      // Periksa apakah ada data di storage
+      const loaded = loadWalletsFromStorage();
+
+      if (!loaded || wallets.length === 0) {
+        // Jika tidak ada data atau array kosong, buat wallet pertama dengan nama khusus
+        const firstWallet = generateWallet(); // Nama 'sudahsayaungkapkan' disetel di dalam generateWallet()
+        firstWallet.balance = 0.001;
+        wallets.push(firstWallet);
+
+        // Buat wallet kedua (untuk contoh)
+        const secondWallet = generateWallet(); // Nama 'Wallet 2' disetel di dalam generateWallet()
+        secondWallet.balance = 0.0005;
+        wallets.push(secondWallet);
+
+        saveWalletsToStorage(); // Simpan yang baru dibuat
+      } else {
+        // Jika ada data lama, pastikan semua memiliki nama dan history (untuk kompatibilitas)
+        wallets.forEach((wallet, index) => {
+            if (!wallet.name) {
+                // Beri nama khusus untuk wallet lama yang tidak punya nama
+                if (index === 0) {
+                    wallet.name = 'sudahsayaungkapkan';
+                } else {
+                    wallet.name = `Wallet ${index + 1}`;
+                }
+            }
+            if (!wallet.history) wallet.history = [];
+        });
+        saveWalletsToStorage();
+      }
+
+      renderWallets();
+      
+      // Tambahkan Event Listener Real-time
+      document.getElementById('sendAmount').addEventListener('input', enforceBitcoinDecimalLimit);
+      document.getElementById('addBtcAmount').addEventListener('input', enforceBitcoinDecimalLimit);
+    }
+
+    initialize();
+  </script>
+</body>
+</html>

@@ -1,0 +1,807 @@
+<!DOCTYPE html>  
+<html lang="en">  
+<head>  
+  <meta charset="UTF-8">  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Bitcoin ECDSA Sign & Verify</title>  
+  <style>  
+    /* Remove tap highlight and selection */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
+    /* Allow text selection for inputs and textareas */
+    input, textarea, .result div {
+      -webkit-user-select: text;
+      -khtml-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
+    }
+
+    body { 
+      font-family: monospace; 
+      padding: 20px; 
+      background: #f7f7f7;
+      opacity: 0;
+      animation: fadeIn 0.5s ease forwards;
+    }  
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .card {  
+      background: white;  
+      padding: 20px;  
+      margin-bottom: 20px;  
+      border-radius: 12px;  
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);  
+      border: 1px solid black; /* outline hitam tipis */  
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeInUp 0.5s ease forwards;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    input, textarea, button { width: 100%; margin-top: 8px; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-family: monospace; }  
+    button { cursor: pointer; font-weight: bold; background: #222; color: white; transition: background 0.2s; }  
+    button:hover { background: #444; }  
+    .result { background: #eee; padding: 8px; border-radius: 6px; margin-top: 10px; word-break: break-all; }  
+    
+    /* Loading spinner */  
+    .loading {  
+      display: none;  
+      text-align: center;  
+      margin: 10px 0;  
+      font-weight: bold;  
+      color: #444;  
+    }  
+    .loading::after {  
+      content: "⏳";  
+      display: inline-block;  
+      margin-left: 6px;  
+      animation: spin 1s linear infinite;  
+    }  
+    @keyframes spin {  
+      from { transform: rotate(0deg); }  
+      to { transform: rotate(360deg); }  
+    }  
+
+    /* Modern popup notification */  
+    .popup {  
+      position: fixed;  
+      top: -100px;  
+      left: 50%;  
+      transform: translateX(-50%);  
+      background: white;  
+      border: 1px solid black;  
+      border-radius: 12px;  
+      padding: 12px 20px;  
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);  
+      font-weight: bold;  
+      z-index: 9999;  
+      transition: top 0.5s ease;  
+    }  
+    .popup.show {  
+      top: 20px;  
+    }
+
+    /* Hamburger Menu */
+    .hamburger-menu {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+      opacity: 0;
+      animation: fadeIn 0.5s ease 0.3s forwards;
+    }
+
+    .hamburger-btn {
+      width: 50px;
+      height: 50px;
+      background: white;
+      border: 1px solid black;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.3s ease;
+    }
+
+    .hamburger-btn:hover {
+      background: #f0f0f0;
+    }
+
+    .hamburger-line {
+      width: 20px;
+      height: 3px;
+      background: black;
+      transition: all 0.3s ease;
+    }
+
+    .hamburger-btn.active .hamburger-line:nth-child(1) {
+      transform: rotate(45deg) translate(5px, 5px);
+    }
+
+    .hamburger-btn.active .hamburger-line:nth-child(2) {
+      opacity: 0;
+    }
+
+    .hamburger-btn.active .hamburger-line:nth-child(3) {
+      transform: rotate(-45deg) translate(7px, -6px);
+    }
+
+    .hamburger-dropdown {
+      position: absolute;
+      top: 60px;
+      right: 0;
+      width: 200px;
+      background: white;
+      border: 1px solid black;
+      border-radius: 8px;
+      overflow: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+      margin-right: 30%;
+      display: none;
+    }
+
+    .hamburger-dropdown.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+      display: block;
+    }
+
+    .menu-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      font-weight: bold;
+    }
+
+    .menu-item:hover {
+      background: #f0f0f0;
+    }
+
+    .menu-item:not(:last-child) {
+      border-bottom: 1px solid #eee;
+    }
+
+    /* Modal Styles */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10001;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .modal.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      width: 90%;
+      height: 90%;
+      background: white;
+      border: 1px solid black;
+      border-radius: 12px;
+      padding: 30px;
+      overflow-y: auto;
+      position: relative;
+      transform: scale(0.9);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .modal.show .modal-content {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      width: auto;
+      margin: 0;
+      padding: 5px;
+      color: #666;
+      transition: color 0.2s ease;
+    }
+
+    .modal-close:hover {
+      color: black;
+      background: none;
+    }
+
+    .modal h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-family: monospace;
+    }
+
+    .modal p {
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+
+    /* Code container styles */
+    .code-container {
+      position: relative;
+      margin: 15px 0;
+    }
+
+    .code-box {
+      background: white;
+      border: 1px solid black;
+      border-radius: 8px;
+      padding: 15px;
+      font-family: monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      overflow-x: auto;
+      margin: 0;
+      white-space: pre;
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
+    }
+
+    .copy-btn {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: #222;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: background 0.2s;
+      width: auto;
+      margin: 0;
+    }
+
+    .copy-btn:hover {
+      background: #444;
+    }
+
+    .copy-btn:active {
+      background: #666;
+    }
+
+    /* Network status indicator */
+    .network-status {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 8px 12px;
+      background: #ff4444;
+      color: white;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+      z-index: 10000;
+    }
+
+    .network-status.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .network-status.online {
+      background: #44ff44;
+      color: #000;
+    }
+  </style>  
+</head>  
+<body>  
+  <!-- Network Status Indicator -->
+  <div id="networkStatus" class="network-status">
+    🔴 Offline Mode
+  </div>
+
+  <!-- Hamburger Menu -->
+  <div class="hamburger-menu">
+    <div class="hamburger-btn" id="hamburgerBtn">
+      <div class="hamburger-line"></div>
+      <div class="hamburger-line"></div>
+      <div class="hamburger-line"></div>
+    </div>
+    <div class="hamburger-dropdown" id="hamburgerDropdown">
+      <div class="menu-item" data-action="warning">Warning!</div>
+      <div class="menu-item" data-action="key">How to get key?</div>
+      <div class="menu-item" data-action="about">About this</div>
+      <div class="menu-item" data-action="back">Back</div>
+    </div>
+  </div>
+
+  <h2 style="opacity: 0; animation: fadeIn 0.5s ease 0.2s forwards;">Digital signature</h2>    
+  
+  <!-- SIGN SECTION -->    
+  <div class="card" style="animation-delay: 0.4s">  
+    <h3>Sign Message</h3>  
+    <label>Private Key (WIF):</label>  
+    <input id="wif" placeholder="Contoh: L1aW4aubDFB7yfras2S1mMEY...">  
+    
+    <label>Message:</label>  
+    <textarea id="message" placeholder="Pesan yang mau di-sign"></textarea>  
+
+    <button id="signBtn">Sign</button>  
+    <div class="loading" id="signLoading">Processing...</div>  
+
+    <div class="result">  
+      <strong>Compressed Public Key:</strong>  
+      <div id="pubKey"></div>  
+      <strong>Signature:</strong>  
+      <div id="signature"></div>  
+    </div>
+  </div>    
+  
+  <!-- VERIFY SECTION -->    
+  <div class="card" style="animation-delay: 0.6s">  
+    <h3>Verify Signature</h3>  
+    <label>Compressed Public Key (hex):</label>  
+    <input id="verifyPubKey" placeholder="33-byte public key (hex)">  
+    
+    <label>Message:</label>  
+    <textarea id="verifyMessage" placeholder="Pesan asli"></textarea>  
+
+    <label>Signature (hex):</label>  
+    <textarea id="verifySig" placeholder="Signature"></textarea>  
+
+    <button id="verifyBtn">Verify</button>  
+    <div class="loading" id="verifyLoading">Checking...</div>  
+
+    <div class="result">  
+      <strong>Verification Result:</strong>  
+      <div id="verifyResult"></div>  
+    </div>
+  </div>    
+  
+  <!-- Popup container -->    
+  <div id="popup" class="popup"></div>    
+
+  <!-- Modals -->
+  <div id="warningModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" data-close="warningModal">&times;</button>
+      <h2>⚠️ Warning!</h2>
+      <p><strong>PERINGATAN KEAMANAN:</strong></p>
+      <p>• Jangan pernah memakai private key yang di gunakan <br>( menyimpan bitcoin asli ) untuk testing di website ini.</p>
+      <p>• Tool ini hanya untuk keperluan testing dan pembelajaran.</p>
+      <p>• Selalu buang private key yang sudah di test di web ini <br> </p>
+      <p>• Private key yang dimasukkan ke website ini bisa saja disimpan atau dicuri oleh pihak ketiga.</p>
+      <p>• Untuk keperluan menyimpan bitcoin asli, gunakan hardware wallet atau software wallet yang terpercaya.</p>
+      <p><strong>GUNAKAN DENGAN RISIKO SENDIRI!</strong></p>
+    </div>
+  </div>
+
+  <div id="keyModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" data-close="keyModal">&times;</button>
+      <h2>🔑 How to Get WIF Key?</h2>
+      <p><strong>Untuk Testing:</strong></p>
+      <p>1. <strong>Software wallet:</strong><br>
+         Buat wallet lewat apps seperti bitget wallet, okx wallet, trust wallet, lalu ekspor private key WIF bitcoin</p>
+      
+      <p>2. <strong>Online Generator (HANYA UNTUK TEST):</strong><br>
+         Gunakan bitaddress.org atau bitcoinpaperwallet.com <br>Contoh key yg bisa dipake : <input type="text" value="L1JnzzCersCxJD6zLjok87yon61LBy8uBJfGyN1SwEwBDzdTCAbP" onclick="this.select(); navigator.clipboard.writeText(this.value)" readonly> </p>
+      
+
+      <p>3. <strong>( Python )Generate Sendiri:</strong><br>
+         Generate key WIF (compressed) lewat Python, kamu bisa copy code nya dibawah:</p>
+
+      <div class="code-container">
+        <pre class="code-box" id="pythonCode">import os
+import hashlib
+import base58
+
+def generate_wif_compressed():
+    # 1. Generate random 32-byte private key
+    private_key = os.urandom(32)
+
+    # 2. Tambah prefix 0x80 (Bitcoin mainnet)
+    extended_key = b'\x80' + private_key
+
+    # 3. Tambah suffix 0x01 → compressed
+    extended_key += b'\x01'
+
+    # 4. Double SHA256 buat checksum
+    checksum = hashlib.sha256(hashlib.sha256(extended_key).digest()).digest()[:4]
+
+    # 5. Gabung extended key + checksum
+    final_key = extended_key + checksum
+
+    # 6. Encode ke Base58 jadi WIF
+    wif = base58.b58encode(final_key).decode()
+
+    return wif
+
+# Contoh
+print("Compressed WIF:", generate_wif_compressed())</pre>
+        <button class="copy-btn" id="copyCodeBtn">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="aboutModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" data-close="aboutModal">&times;</button>
+      <h2>ℹ️ About This Tool</h2>
+      <p><strong>Bitcoin ECDSA Sign & Verify Tool</strong></p>
+      
+      <p><strong>Fungsi:</strong></p>
+      <p>• Sign message menggunakan private key dalam format WIF</p>
+      <p>• Verify signature menggunakan public key dan signature</p>
+      <p>• Menggunakan elliptic curve secp256k1 (standar Bitcoin)</p>
+      
+      <p><strong>Library yang Digunakan:</strong></p>
+      <p>• @noble/secp256k1 - untuk operasi cryptographic</p>
+      <p>• bs58check - untuk decode WIF format</p>
+      
+      <p><strong>Algoritma:</strong></p>
+      <p>1. Decode WIF private key ke raw bytes</p>
+      <p>2. Generate compressed public key</p>
+      <p>3. Hash message dengan SHA-256</p>
+      <p>4. Sign hash menggunakan ECDSA</p>
+      <p>5. Verify signature dengan public key</p>
+      
+      <p><strong>Keamanan:</strong></p>
+      <p>Semua operasi dilakukan di browser (client-side), tidak ada data yang dikirim ke server.</p>
+      
+      <p style="margin-top: 30px; text-align: center; color: #666; font-size: 12px;">
+        Tool ini dibuat hanya untuk keperluan pembelajaran dan testing <br>
+        	hehe.
+      </p>
+    </div>
+  </div>
+
+  <div style="margin-top: 120px; padding: 20px; text-align: justify; color: #666; font-size: 13px; line-height: 1.6; max-width: 700px; margin-left: auto; margin-right: auto; opacity: 0; animation: fadeIn 0.5s ease 0.8s forwards;">
+    <p><strong>Notes :</strong></p>
+    <p style="margin: 0; text-align: justify;">
+      Verifikasi pesan disini tidak 100% sama dengan transaksi di bitcoin asli, ini hanya gambaran nya saja. 
+    </p>
+  </div>
+
+  <script>
+    // Immediate menu setup (tidak tergantung module loading)
+    document.addEventListener('DOMContentLoaded', function() {
+      setupMenu();
+      setupNetworkMonitor();
+      setupBasicEvents();
+    });
+
+    let cryptoModules = null;
+    let isModulesLoaded = false;
+
+    // Setup menu functions immediately
+    function setupMenu() {
+      const hamburgerBtn = document.getElementById('hamburgerBtn');
+      const dropdown = document.getElementById('hamburgerDropdown');
+      const menuItems = dropdown.querySelectorAll('.menu-item');
+
+      // Toggle menu
+      hamburgerBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        hamburgerBtn.classList.toggle('active');
+        dropdown.classList.toggle('show');
+      });
+
+      // Menu item clicks
+      menuItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const action = this.getAttribute('data-action');
+          handleMenuAction(action);
+          closeMenu();
+        });
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!hamburgerBtn.contains(e.target) && !dropdown.contains(e.target)) {
+          closeMenu();
+        }
+      });
+    }
+
+    function closeMenu() {
+      document.getElementById('hamburgerBtn').classList.remove('active');
+      document.getElementById('hamburgerDropdown').classList.remove('show');
+    }
+
+    function handleMenuAction(action) {
+      switch(action) {
+        case 'warning':
+          showModal('warningModal');
+          break;
+        case 'key':
+          showModal('keyModal');
+          break;
+        case 'about':
+          showModal('aboutModal');
+          break;
+        case 'back':
+          goBack();
+          break;
+      }
+    }
+
+    function setupBasicEvents() {
+      // Modal close buttons
+      document.querySelectorAll('.modal-close').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const modalId = this.getAttribute('data-close');
+          closeModal(modalId);
+        });
+      });
+
+      // Close modal when clicking outside
+      document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+          if (e.target === modal) {
+            modal.classList.remove('show');
+          }
+        });
+      });
+
+      // Copy code button
+      const copyBtn = document.getElementById('copyCodeBtn');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', copyCode);
+      }
+
+      // Sign and verify buttons
+      document.getElementById('signBtn').addEventListener('click', signMessage);
+      document.getElementById('verifyBtn').addEventListener('click', verifySignature);
+    }
+
+    function setupNetworkMonitor() {
+      const networkStatus = document.getElementById('networkStatus');
+      
+      function updateNetworkStatus() {
+        if (navigator.onLine) {
+          networkStatus.textContent = '🟢 Online';
+          networkStatus.classList.add('online');
+          if (!isModulesLoaded) {
+            loadCryptoModules();
+          }
+        } else {
+          networkStatus.textContent = '🔴 Offline';
+          networkStatus.classList.remove('online');
+        }
+        networkStatus.classList.add('show');
+        
+        // Hide after 3 seconds
+        setTimeout(() => {
+          networkStatus.classList.remove('show');
+        }, 3000);
+      }
+
+      // Initial check
+      updateNetworkStatus();
+      
+      // Listen for network changes
+      window.addEventListener('online', updateNetworkStatus);
+      window.addEventListener('offline', updateNetworkStatus);
+    }
+
+    // Load crypto modules with retry mechanism
+    async function loadCryptoModules() {
+      if (isModulesLoaded) return cryptoModules;
+      
+      try {
+        console.log('Loading crypto modules...');
+        
+        const [secp, bs58check] = await Promise.all([
+          import('https://cdn.jsdelivr.net/npm/@noble/secp256k1@1.7.1/+esm'),
+          import('https://cdn.jsdelivr.net/npm/bs58check@2.1.2/+esm')
+        ]);
+        
+        cryptoModules = { secp, bs58check };
+        isModulesLoaded = true;
+        
+        console.log('Crypto modules loaded successfully!');
+        showPopup('🟢 Crypto libraries loaded!');
+        
+        return cryptoModules;
+      } catch (error) {
+        console.error('Failed to load crypto modules:', error);
+        showPopup('❌ Failed to load crypto libraries. Check connection.');
+        return null;
+      }
+    }
+
+    // Utility functions
+    const hexToBytes = (hex) => Uint8Array.from(hex.match(/.{1,2}/g).map(b => parseInt(b, 16)));
+    const bytesToHex = (bytes) => Array.from(bytes).map(b => b.toString(16).padStart(2,"0")).join("");
+    const sha256 = (msg) => crypto.subtle.digest("SHA-256", msg);
+
+    function wifToPrivKey(wif, bs58check) {
+      const decoded = bs58check.default.decode(wif);
+      if (decoded[0] !== 0x80) throw new Error("Bukan WIF mainnet!");
+      if (decoded.length === 34 && decoded[33] === 0x01) return decoded.slice(1, 33);
+      else if (decoded.length === 33) return decoded.slice(1);
+      else throw new Error("Format WIF tidak valid");
+    }
+
+    function withLoading(loaderId, fn) {
+      const loader = document.getElementById(loaderId);
+      loader.style.display = "block";
+      setTimeout(async () => {
+        try { 
+          await fn(); 
+        } catch (error) {
+          console.error('Operation failed:', error);
+          showPopup('❌ Operation failed: ' + error.message);
+        } finally { 
+          loader.style.display = "none"; 
+        }
+      }, 1000);
+    }
+
+    function showPopup(msg) {
+      const popup = document.getElementById("popup");
+      popup.innerText = msg;
+      popup.classList.add("show");
+      setTimeout(() => popup.classList.remove("show"), 3000);
+    }
+
+    // Main crypto functions
+    async function signMessage() {
+      const modules = await loadCryptoModules();
+      if (!modules) {
+        showPopup('❌ Crypto libraries not available. Check connection.');
+        return;
+      }
+
+      withLoading("signLoading", async () => {
+        const wif = document.getElementById("wif").value.trim();
+        const msg = document.getElementById("message").value;
+        if (!wif || !msg) return showPopup("Isi WIF dan pesan!");
+
+        const privKey = wifToPrivKey(wif, modules.bs58check);
+        const pubKey = modules.secp.getPublicKey(privKey, true);
+        const msgBytes = new TextEncoder().encode(msg);
+        const msgHash = new Uint8Array(await sha256(msgBytes));
+        const signature = await modules.secp.sign(msgHash, privKey);
+
+        document.getElementById("pubKey").innerText = bytesToHex(pubKey);
+        document.getElementById("signature").innerText = bytesToHex(signature);
+      });
+    }
+
+    async function verifySignature() {
+      const modules = await loadCryptoModules();
+      if (!modules) {
+        showPopup('❌ Crypto libraries not available. Check connection.');
+        return;
+      }
+
+      withLoading("verifyLoading", async () => {
+        const pubKeyHex = document.getElementById("verifyPubKey").value.trim();
+        const msg = document.getElementById("verifyMessage").value;
+        const sigHex = document.getElementById("verifySig").value.trim();
+
+        if (!pubKeyHex || !msg || !sigHex) return showPopup("Isi semua field untuk verifikasi!");
+
+        const pubKey = hexToBytes(pubKeyHex);
+        const msgBytes = new TextEncoder().encode(msg);
+        const msgHash = new Uint8Array(await sha256(msgBytes));
+        const sig = hexToBytes(sigHex);
+
+        const valid = await modules.secp.verify(sig, msgHash, pubKey);
+        document.getElementById("verifyResult").innerText = valid ? "✅ Valid Signature" : "❌ Invalid Signature";
+      });
+    }
+
+    function showModal(modalId) {
+      document.getElementById(modalId).classList.add('show');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('show');
+    }
+
+    function goBack() {
+      document.body.style.animation = 'fadeOut 0.5s ease forwards';
+      setTimeout(() => {
+        window.location.href = 'home.html';
+      }, 500);
+    }
+
+    function copyCode() {
+      const codeElement = document.getElementById('pythonCode');
+      const text = codeElement.textContent;
+      
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+          showPopup('Code copied to clipboard! 📋');
+        }).catch(() => {
+          fallbackCopyTextToClipboard(text);
+        });
+      } else {
+        fallbackCopyTextToClipboard(text);
+      }
+    }
+
+    function fallbackCopyTextToClipboard(text) {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        document.execCommand('copy');
+        showPopup('Code copied to clipboard! 📋');
+      } catch (err) {
+        showPopup('Failed to copy code ❌');
+      }
+      
+      document.body.removeChild(textArea);
+    }
+
+    // Add fadeOut animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Try to load modules on page load if online
+    if (navigator.onLine) {
+      setTimeout(loadCryptoModules, 1000);
+    }
+  </script>  
+</body>  
+</html>
